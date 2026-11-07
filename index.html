@@ -3,97 +3,200 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BTC AI量化系统</title>
+<title>BTC AI量化终端</title>
 <style>
-body{margin:0;background:#101827;color:#fff;font-family:Arial,sans-serif;padding:18px}
-h1{font-size:24px}
-.card{background:#1d293b;padding:18px;border-radius:12px;margin:14px 0}
-.label{color:#9caec5;font-size:14px}
-.value{font-size:25px;font-weight:bold;margin-top:8px}
-.green{color:#20d69a}
-.red{color:#ff6262}
-.small{font-size:13px;color:#9caec5;line-height:1.8}
+body {
+  margin: 0;
+  padding: 18px;
+  background: #101827;
+  color: #fff;
+  font-family: Arial, sans-serif;
+}
+h1 { color: #f0b90b; font-size: 24px; }
+.card {
+  background: #1d293b;
+  padding: 18px;
+  border-radius: 12px;
+  margin: 14px 0;
+}
+.label { color: #9caec5; font-size: 14px; }
+.value {
+  font-size: 25px;
+  font-weight: bold;
+  margin-top: 8px;
+  word-break: break-word;
+}
+.green { color: #20d69a; }
+.red { color: #ff6262; }
+.small {
+  font-size: 13px;
+  color: #9caec5;
+  line-height: 1.8;
+  word-break: break-word;
+}
+button {
+  background: #f0b90b;
+  color: #101827;
+  border: 0;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: bold;
+  margin-top: 12px;
+}
 </style>
 </head>
 <body>
-
-<h1>₿ BTC AI量化系统</h1>
-<p class="small">市场数据监控 · 多周期分析 · 模拟交易</p>
-
+<h1>₿ BTC AI量化终端</h1>
+<p class="small">实时行情 · 多周期分析 · AI观察 · 模拟交易</p>
 <div class="card">
-<div class="label">BTC 最新价格</div>
-<div class="value" id="price">等待数据...</div>
+  <div class="label">BTC实时价格（OKX）</div>
+  <div class="value" id="price">正在连接行情...</div>
+  <div class="small" id="liveTime">等待实时行情...</div>
 </div>
-
 <div class="card">
-<div class="label">AI 观察信号</div>
-<div class="value" id="signal">等待数据...</div>
+  <div class="label">AI观察信号</div>
+  <div class="value" id="signal">等待数据</div>
 </div>
-
 <div class="card">
-<div class="label">多空评分</div>
-<div class="value" id="score">等待数据...</div>
+  <div class="label">多空评分</div>
+  <div class="value" id="score">等待数据</div>
+  <div class="small" id="difference"></div>
 </div>
-
 <div class="card">
-<div class="label">15分钟 / 1小时 / 4小时分析</div>
-<div class="small" id="analysis">等待数据...</div>
+  <div class="label">15分钟分析</div>
+  <div class="small" id="m15">等待数据</div>
 </div>
-
 <div class="card">
-<div class="label">资金费率</div>
-<div class="value" id="funding">--</div>
+  <div class="label">1小时分析</div>
+  <div class="small" id="h1">等待数据</div>
 </div>
-
 <div class="card">
-<div class="label">持仓量</div>
-<div class="value" id="oi">--</div>
+  <div class="label">4小时分析</div>
+  <div class="small" id="h4">等待数据</div>
 </div>
-
 <div class="card">
-<div class="label">最近更新时间</div>
-<div class="small" id="time">等待数据...</div>
+  <div class="label">资金费率</div>
+  <div class="value" id="funding">--</div>
+  <div class="label" style="margin-top:16px">持仓量</div>
+  <div class="value" id="oi">--</div>
 </div>
-
+<div class="card">
+  <div class="label">AI分析数据更新时间</div>
+  <div class="small" id="updated">等待数据</div>
+  <div class="small" id="status">正在读取系统数据...</div>
+  <button onclick="loadData()">刷新AI分析</button>
+</div>
 <script>
-async function loadData(){
-try{
-const response=await fetch('./data/btc_history.jsonl?t='+Date.now());
-if(!response.ok) throw new Error('数据文件尚未发布');
-const text=await response.text();
-const lines=text.trim().split('\n');
-const data=JSON.parse(lines[lines.length-1]);
-
-document.getElementById('price').textContent=
-data.price ? '$'+Number(data.price).toLocaleString() : '--';
-
-document.getElementById('signal').textContent=
-data.signal || '等待分析';
-
-document.getElementById('score').textContent=
-'多头 '+(data.long_score ?? '--')+
-' / 空头 '+(data.short_score ?? '--');
-
-document.getElementById('analysis').textContent=
-JSON.stringify(data.analysis || {});
-
-document.getElementById('funding').textContent=
-data.funding_rate ?? '--';
-
-document.getElementById('oi').textContent=
-data.open_interest ?? '--';
-
-document.getElementById('time').textContent=
-data.timestamp || '--';
-
-}catch(e){
-document.getElementById('signal').textContent='等待数据接入';
-document.getElementById('analysis').textContent=e.message;
+const OKX_URL =
+  'https://www.okx.com/api/v5/market/ticker?instId=BTC-USDT-SWAP';
+let loadingLive = false;
+let loadingHistory = false;
+// 格式化价格
+function formatPrice(value) {
+  return '$' + Number(value).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
 }
+// 获取OKX实时价格
+async function updateLivePrice() {
+  if (loadingLive) return;
+  loadingLive = true;
+  try {
+    const response = await fetch(
+      OKX_URL + '&t=' + Date.now(),
+      { cache: 'no-store' }
+    );
+    if (!response.ok) {
+      throw new Error('OKX接口请求失败：' + response.status);
+    }
+    const result = await response.json();
+    if (result.code !== '0' || !result.data || !result.data.length) {
+      throw new Error('OKX没有返回有效行情');
+    }
+    const ticker = result.data[0];
+    document.getElementById('price').textContent =
+      formatPrice(ticker.last);
+    document.getElementById('liveTime').textContent =
+      '实时行情更新时间：' + new Date().toLocaleString();
+  } catch (error) {
+    document.getElementById('liveTime').textContent =
+      '实时行情获取失败：' + error.message;
+    console.log(error);
+  } finally {
+    loadingLive = false;
+  }
 }
+// 显示周期分析
+function showPeriod(id, analysis, key) {
+  const item = analysis[key];
+  const element = document.getElementById(id);
+  if (!item) {
+    element.textContent = '暂无数据';
+    return;
+  }
+  element.textContent =
+    '趋势：' + (item.trend ?? '--') +
+    ' | RSI：' + (item.rsi14 ?? '--') +
+    ' | EMA20：' + (item.ema20 ?? '--') +
+    ' | EMA50：' + (item.ema50 ?? '--') +
+    ' | 强度：' + (item.trend_strength ?? '--');
+}
+// 获取GitHub历史分析数据
+async function loadData() {
+  if (loadingHistory) return;
+  loadingHistory = true;
+  const status = document.getElementById('status');
+  status.textContent = '正在读取AI分析数据...';
+  try {
+    const response = await fetch(
+      './data/btc_history.jsonl?t=' + Date.now(),
+      { cache: 'no-store' }
+    );
+    if (!response.ok) {
+      throw new Error('历史数据读取失败：' + response.status);
+    }
+    const text = await response.text();
+    const lines = text.trim().split('\n').filter(Boolean);
+    if (!lines.length) {
+      throw new Error('历史数据文件为空');
+    }
+    const data = JSON.parse(lines[lines.length - 1]);
+    const analysis = data.analysis || {};
+    // 注意：这里不再修改BTC价格
+    // 实时价格只由OKX接口控制
+    document.getElementById('signal').textContent =
+      data.signal ?? '等待分析';
+    document.getElementById('score').textContent =
+      '多头 ' + (data.long_score ?? '--') +
+      ' / 空头 ' + (data.short_score ?? '--');
+    document.getElementById('difference').textContent =
+      '分数差：' + (data.score_difference ?? '--');
+    showPeriod('m15', analysis, '15m');
+    showPeriod('h1', analysis, '1H');
+    showPeriod('h4', analysis, '4H');
+    document.getElementById('funding').textContent =
+      data.funding_rate ?? '--';
+    document.getElementById('oi').textContent =
+      data.open_interest ?? '--';
+    document.getElementById('updated').textContent =
+      data.timestamp ?? data.time ?? '暂无更新时间';
+    status.textContent =
+      'AI数据读取成功，共 ' + lines.length + ' 条历史记录';
+  } catch (error) {
+    status.textContent = 'AI数据读取失败：' + error.message;
+    console.log(error);
+  } finally {
+    loadingHistory = false;
+  }
+}
+// 页面打开后立即执行
+updateLivePrice();
 loadData();
-setInterval(loadData,60000);
+// 实时价格每3秒更新
+setInterval(updateLivePrice, 3000);
+// AI分析每60秒更新
+setInterval(loadData, 60000);
 </script>
-
 </body>
 </html>
