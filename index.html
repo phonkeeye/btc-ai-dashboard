@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BTC AI量化系统</title>
+<style>
+body{margin:0;background:#101827;color:#fff;font-family:Arial,sans-serif;padding:18px}
+h1{font-size:24px}
+.card{background:#1d293b;padding:18px;border-radius:12px;margin:14px 0}
+.label{color:#9caec5;font-size:14px}
+.value{font-size:25px;font-weight:bold;margin-top:8px}
+.green{color:#20d69a}
+.red{color:#ff6262}
+.small{font-size:13px;color:#9caec5;line-height:1.8}
+</style>
+</head>
+<body>
+
+<h1>₿ BTC AI量化系统</h1>
+<p class="small">市场数据监控 · 多周期分析 · 模拟交易</p>
+
+<div class="card">
+<div class="label">BTC 最新价格</div>
+<div class="value" id="price">等待数据...</div>
+</div>
+
+<div class="card">
+<div class="label">AI 观察信号</div>
+<div class="value" id="signal">等待数据...</div>
+</div>
+
+<div class="card">
+<div class="label">多空评分</div>
+<div class="value" id="score">等待数据...</div>
+</div>
+
+<div class="card">
+<div class="label">15分钟 / 1小时 / 4小时分析</div>
+<div class="small" id="analysis">等待数据...</div>
+</div>
+
+<div class="card">
+<div class="label">资金费率</div>
+<div class="value" id="funding">--</div>
+</div>
+
+<div class="card">
+<div class="label">持仓量</div>
+<div class="value" id="oi">--</div>
+</div>
+
+<div class="card">
+<div class="label">最近更新时间</div>
+<div class="small" id="time">等待数据...</div>
+</div>
+
+<script>
+async function loadData(){
+try{
+const response=await fetch('./data/btc_history.jsonl?t='+Date.now());
+if(!response.ok) throw new Error('数据文件尚未发布');
+const text=await response.text();
+const lines=text.trim().split('\n');
+const data=JSON.parse(lines[lines.length-1]);
+
+document.getElementById('price').textContent=
+data.price ? '$'+Number(data.price).toLocaleString() : '--';
+
+document.getElementById('signal').textContent=
+data.signal || '等待分析';
+
+document.getElementById('score').textContent=
+'多头 '+(data.long_score ?? '--')+
+' / 空头 '+(data.short_score ?? '--');
+
+document.getElementById('analysis').textContent=
+JSON.stringify(data.analysis || {});
+
+document.getElementById('funding').textContent=
+data.funding_rate ?? '--';
+
+document.getElementById('oi').textContent=
+data.open_interest ?? '--';
+
+document.getElementById('time').textContent=
+data.timestamp || '--';
+
+}catch(e){
+document.getElementById('signal').textContent='等待数据接入';
+document.getElementById('analysis').textContent=e.message;
+}
+}
+loadData();
+setInterval(loadData,60000);
+</script>
+
+</body>
+</html>
