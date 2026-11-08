@@ -412,19 +412,16 @@ function analyzePeriod(rows) {
   let longPoints = 0;
   let shortPoints = 0;
 
-  // EMA趋势判断
   if (ema20 > ema50) longPoints += 2;
   if (ema20 < ema50) shortPoints += 2;
 
-  // RSI判断
   if (rsi >= 55) longPoints += 1;
   if (rsi <= 45) shortPoints += 1;
 
-  // 价格与EMA20关系
   if (lastPrice > ema20) longPoints += 1;
   if (lastPrice < ema20) shortPoints += 1;
 
-  // 成交量分析：最新一根收盘K线与前20根平均量比较
+  // 第一层：最新K线成交量与前20根平均量比较
   const lastRow = rows[rows.length - 1];
   const previousRows = rows.slice(-21, -1);
 
@@ -473,6 +470,98 @@ function analyzePeriod(rows) {
       }
     }
   }
+
+  // 第二层：最近5根与前5根K线的量价变化
+  const recentRows = rows.slice(-5);
+  const olderRows = rows.slice(-10, -5);
+
+  let priceChangePercent = null;
+  let volumeChangePercent = null;
+  let volumeDivergence = '数据不足';
+
+  if (recentRows.length === 5 && olderRows.length === 5) {
+
+    const recentStartPrice = Number(recentRows[0].close);
+    const recentEndPrice = Number(recentRows[4].close);
+
+    const recentAvgVolume =
+      recentRows.reduce((sum, row) => sum + Number(row.volume), 0) / 5;
+
+    const olderAvgVolume =
+      olderRows.reduce((sum, row) => sum + Number(row.volume), 0) / 5;
+
+    const validVolumes =
+      [...recentRows, ...olderRows].every(row =>
+        Number.isFinite(Number(row.volume)) &&
+        Number(row.volume) >= 0
+      );
+
+    if (
+      recentStartPrice > 0 &&
+      olderAvgVolume > 0 &&
+      validVolumes
+    ) {
+
+      priceChangePercent =
+        (recentEndPrice - recentStartPrice) /
+        recentStartPrice * 100;
+
+      volumeChangePercent =
+        (recentAvgVolume - olderAvgVolume) /
+        olderAvgVolume * 100;
+
+      if (priceChangePercent > 0.1) {
+
+        if (volumeChangePercent >= 20) {
+          volumeDivergence = '上涨且放量，量能增强';
+        } else if (volumeChangePercent <= -20) {
+          volumeDivergence = '价涨量缩，注意上涨动能';
+        } else {
+          volumeDivergence = '价格上涨，量能变化不明显';
+        }
+
+      } else if (priceChangePercent < -0.1) {
+
+        if (volumeChangePercent >= 20) {
+          volumeDivergence = '下跌且放量，卖压增强';
+        } else if (volumeChangePercent <= -20) {
+          volumeDivergence = '价跌量缩，注意下跌动能';
+        } else {
+          volumeDivergence = '价格下跌，量能变化不明显';
+        }
+
+      } else {
+
+        volumeDivergence =
+          volumeChangePercent >= 20
+            ? '价格横盘，成交量增加'
+            : volumeChangePercent <= -20
+            ? '价格横盘，成交量减少'
+            : '价格与成交量变化不明显';
+      }
+    }
+  }
+
+  return {
+    trend,
+    rsi,
+    ema20,
+    ema50,
+    distance,
+    lastPrice,
+    longPoints,
+    shortPoints,
+    lastVolume,
+    averageVolume,
+    volumeRatio,
+    volumeStatus,
+    volumeSignal,
+    priceChangePercent,
+    volumeChangePercent,
+    volumeDivergence,
+    time: lastRow.time
+  };
+}
 
   return {
     trend,
