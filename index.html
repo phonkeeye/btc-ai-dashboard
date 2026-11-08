@@ -584,21 +584,37 @@ async function loadMarketData() {
       .filter(Boolean)
       .map(line => JSON.parse(line));
 
-    if (!rows.length) return;
+    if (!rows.length) {
+      throw new Error('资金数据为空');
+    }
 
     const latest = rows[rows.length - 1];
 
+    const markets = latest.markets || [];
+
     for (const coin of Object.keys(SYMBOLS)) {
 
-      const item = latest[coin];
+      const symbol = SYMBOLS[coin];
 
-      if (!item) continue;
+      const item = markets.find(
+        market => market.symbol === symbol
+      );
+
+      if (!item) {
+        setText(coin + '-extra', '暂无资金数据');
+        continue;
+      }
+
+      const funding =
+        Number(item.funding_rate) * 100;
 
       setText(
         coin + '-extra',
-        '资金费率：' + (item.funding_rate ?? '--') +
-        ' | 持仓量：' + (item.open_interest ?? '--') +
-        ' | 24小时成交量：' + (item.volume_24h ?? '--')
+        '资金费率：' + funding.toFixed(5) + '%' +
+        ' | 持仓量：' +
+        Number(item.open_interest).toLocaleString('en-US') +
+        ' | 24小时成交量：' +
+        Number(item.volume_24h).toLocaleString('en-US')
       );
     }
 
@@ -609,7 +625,7 @@ async function loadMarketData() {
     for (const coin of Object.keys(SYMBOLS)) {
       setText(
         coin + '-extra',
-        '资金费率和持仓量暂不可用'
+        '资金数据读取失败：' + error.message
       );
     }
   }
