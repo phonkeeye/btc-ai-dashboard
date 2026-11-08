@@ -424,6 +424,56 @@ function analyzePeriod(rows) {
   if (lastPrice > ema20) longPoints += 1;
   if (lastPrice < ema20) shortPoints += 1;
 
+  // 成交量分析：最新一根收盘K线与前20根平均量比较
+  const lastRow = rows[rows.length - 1];
+  const previousRows = rows.slice(-21, -1);
+
+  const lastVolume = Number(lastRow.volume);
+
+  const previousVolumes = previousRows
+    .map(row => Number(row.volume))
+    .filter(volume => Number.isFinite(volume) && volume >= 0);
+
+  let averageVolume = null;
+  let volumeRatio = null;
+  let volumeStatus = '数据不足';
+  let volumeSignal = '暂无法判断';
+
+  if (
+    Number.isFinite(lastVolume) &&
+    lastVolume >= 0 &&
+    previousVolumes.length === 20
+  ) {
+    averageVolume =
+      previousVolumes.reduce((sum, volume) => sum + volume, 0) / 20;
+
+    if (averageVolume > 0) {
+      volumeRatio = lastVolume / averageVolume;
+
+      if (volumeRatio >= 1.5) {
+        volumeStatus = '放量';
+      } else if (volumeRatio <= 0.7) {
+        volumeStatus = '缩量';
+      } else {
+        volumeStatus = '成交量正常';
+      }
+
+      const previousPrice = closes[closes.length - 2];
+
+      if (lastPrice > previousPrice) {
+        volumeSignal =
+          volumeStatus === '放量' ? '放量上涨' :
+          volumeStatus === '缩量' ? '缩量上涨' : '正常上涨';
+      } else if (lastPrice < previousPrice) {
+        volumeSignal =
+          volumeStatus === '放量' ? '放量下跌' :
+          volumeStatus === '缩量' ? '缩量下跌' : '正常下跌';
+      } else {
+        volumeSignal = '价格持平';
+      }
+    }
+  }
+
   return {
     trend,
     rsi,
@@ -433,7 +483,12 @@ function analyzePeriod(rows) {
     lastPrice,
     longPoints,
     shortPoints,
-    time: rows[rows.length - 1].time
+    lastVolume,
+    averageVolume,
+    volumeRatio,
+    volumeStatus,
+    volumeSignal,
+    time: lastRow.time
   };
 }
 
@@ -490,13 +545,21 @@ function showPeriod(coin, period, item) {
 
   const id = coin + '-' + period;
 
+  const volumeText =
+    item.volumeRatio === null
+      ? '成交量：数据不足'
+      : '成交量：' + item.volumeStatus +
+        '（平均量的 ' + item.volumeRatio.toFixed(2) + ' 倍）' +
+        ' | ' + item.volumeSignal;
+
   setText(
     id,
     '趋势：' + item.trend +
     ' | RSI14：' + item.rsi.toFixed(2) +
     ' | EMA20：' + item.ema20.toFixed(2) +
     ' | EMA50：' + item.ema50.toFixed(2) +
-    ' | EMA差距：' + item.distance.toFixed(3) + '%'
+    ' | EMA差距：' + item.distance.toFixed(3) + '%' +
+    ' | ' + volumeText
   );
 }
 
