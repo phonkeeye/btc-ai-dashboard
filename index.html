@@ -95,6 +95,7 @@ button {
 
 <!-- 三币分析 -->
 <div id="analysisArea">
+
   <div class="card">
     <div class="label">BTC 独立量化分析</div>
     <div class="value" id="BTC-signal">等待分析</div>
@@ -142,6 +143,7 @@ button {
     <div class="divider"></div>
     <div class="small" id="SOL-extra">等待资金数据</div>
   </div>
+
 </div>
 
 <div class="card">
@@ -186,7 +188,10 @@ function formatPrice(value) {
 }
 
 function setText(id, text) {
-  el(id).textContent = text;
+  const element = el(id);
+  if (element) {
+    element.textContent = text;
+  }
 }
 
 // ===============================
@@ -227,7 +232,6 @@ function showStats(ticker, id) {
   }
 
   const change = (last - open) / open * 100;
-
   const sign = change > 0 ? '+' : '';
 
   setText(
@@ -248,7 +252,6 @@ async function updatePrices() {
 
   try {
     for (const [coin, instId] of Object.entries(SYMBOLS)) {
-
       const ticker = await getTicker(instId);
 
       const prefix = coin === 'BTC' ? 'btc' : coin.toLowerCase();
@@ -262,7 +265,6 @@ async function updatePrices() {
 
       showStats(ticker, prefix + 'Stats');
     }
-
   } catch (error) {
     console.log('行情错误：', error);
   } finally {
@@ -275,7 +277,6 @@ async function updatePrices() {
 // ===============================
 
 async function loadCandles(coin, period) {
-
   const instId = SYMBOLS[coin];
 
   const path =
@@ -320,11 +321,9 @@ async function loadCandles(coin, period) {
 // ===============================
 
 function calculateEMA(values, period) {
-
   if (values.length < period) return null;
 
   const multiplier = 2 / (period + 1);
-
   let ema = values[0];
 
   for (let i = 1; i < values.length; i++) {
@@ -341,14 +340,12 @@ function calculateEMA(values, period) {
 // ===============================
 
 function calculateRSI(values, period = 14) {
-
   if (values.length <= period) return null;
 
   let gains = 0;
   let losses = 0;
 
   for (let i = 1; i <= period; i++) {
-
     const change = values[i] - values[i - 1];
 
     if (change > 0) gains += change;
@@ -359,7 +356,6 @@ function calculateRSI(values, period = 14) {
   let avgLoss = losses / period;
 
   for (let i = period + 1; i < values.length; i++) {
-
     const change = values[i] - values[i - 1];
 
     const gain = Math.max(change, 0);
@@ -384,7 +380,6 @@ function calculateRSI(values, period = 14) {
 // ===============================
 
 function analyzePeriod(rows) {
-
   const closes = rows.map(row => Number(row.close));
 
   const ema20 = calculateEMA(closes, 20);
@@ -422,6 +417,7 @@ function analyzePeriod(rows) {
   if (lastPrice < ema20) shortPoints += 1;
 
   // 第一层：最新K线成交量与前20根平均量比较
+
   const lastRow = rows[rows.length - 1];
   const previousRows = rows.slice(-21, -1);
 
@@ -429,7 +425,9 @@ function analyzePeriod(rows) {
 
   const previousVolumes = previousRows
     .map(row => Number(row.volume))
-    .filter(volume => Number.isFinite(volume) && volume >= 0);
+    .filter(volume =>
+      Number.isFinite(volume) && volume >= 0
+    );
 
   let averageVolume = null;
   let volumeRatio = null;
@@ -442,7 +440,9 @@ function analyzePeriod(rows) {
     previousVolumes.length === 20
   ) {
     averageVolume =
-      previousVolumes.reduce((sum, volume) => sum + volume, 0) / 20;
+      previousVolumes.reduce(
+        (sum, volume) => sum + volume, 0
+      ) / 20;
 
     if (averageVolume > 0) {
       volumeRatio = lastVolume / averageVolume;
@@ -460,11 +460,13 @@ function analyzePeriod(rows) {
       if (lastPrice > previousPrice) {
         volumeSignal =
           volumeStatus === '放量' ? '放量上涨' :
-          volumeStatus === '缩量' ? '缩量上涨' : '正常上涨';
+          volumeStatus === '缩量' ? '缩量上涨' :
+          '正常上涨';
       } else if (lastPrice < previousPrice) {
         volumeSignal =
           volumeStatus === '放量' ? '放量下跌' :
-          volumeStatus === '缩量' ? '缩量下跌' : '正常下跌';
+          volumeStatus === '缩量' ? '缩量下跌' :
+          '正常下跌';
       } else {
         volumeSignal = '价格持平';
       }
@@ -472,6 +474,7 @@ function analyzePeriod(rows) {
   }
 
   // 第二层：最近5根与前5根K线的量价变化
+
   const recentRows = rows.slice(-5);
   const olderRows = rows.slice(-10, -5);
 
@@ -479,16 +482,22 @@ function analyzePeriod(rows) {
   let volumeChangePercent = null;
   let volumeDivergence = '数据不足';
 
-  if (recentRows.length === 5 && olderRows.length === 5) {
-
+  if (
+    recentRows.length === 5 &&
+    olderRows.length === 5
+  ) {
     const recentStartPrice = Number(recentRows[0].close);
     const recentEndPrice = Number(recentRows[4].close);
 
     const recentAvgVolume =
-      recentRows.reduce((sum, row) => sum + Number(row.volume), 0) / 5;
+      recentRows.reduce(
+        (sum, row) => sum + Number(row.volume), 0
+      ) / 5;
 
     const olderAvgVolume =
-      olderRows.reduce((sum, row) => sum + Number(row.volume), 0) / 5;
+      olderRows.reduce(
+        (sum, row) => sum + Number(row.volume), 0
+      ) / 5;
 
     const validVolumes =
       [...recentRows, ...olderRows].every(row =>
@@ -501,7 +510,6 @@ function analyzePeriod(rows) {
       olderAvgVolume > 0 &&
       validVolumes
     ) {
-
       priceChangePercent =
         (recentEndPrice - recentStartPrice) /
         recentStartPrice * 100;
@@ -511,7 +519,6 @@ function analyzePeriod(rows) {
         olderAvgVolume * 100;
 
       if (priceChangePercent > 0.1) {
-
         if (volumeChangePercent >= 20) {
           volumeDivergence = '上涨且放量，量能增强';
         } else if (volumeChangePercent <= -20) {
@@ -519,9 +526,7 @@ function analyzePeriod(rows) {
         } else {
           volumeDivergence = '价格上涨，量能变化不明显';
         }
-
       } else if (priceChangePercent < -0.1) {
-
         if (volumeChangePercent >= 20) {
           volumeDivergence = '下跌且放量，卖压增强';
         } else if (volumeChangePercent <= -20) {
@@ -529,9 +534,7 @@ function analyzePeriod(rows) {
         } else {
           volumeDivergence = '价格下跌，量能变化不明显';
         }
-
       } else {
-
         volumeDivergence =
           volumeChangePercent >= 20
             ? '价格横盘，成交量增加'
@@ -563,20 +566,16 @@ function analyzePeriod(rows) {
   };
 }
 
-
-
 // ===============================
 // 三周期综合评分
 // ===============================
 
 function calculateSignal(periodData) {
-
   let longScore = 0;
   let shortScore = 0;
   let totalWeight = 0;
 
   for (const period of PERIODS) {
-
     const item = periodData[period];
     const weight = WEIGHTS[period];
 
@@ -615,7 +614,6 @@ function calculateSignal(periodData) {
 // ===============================
 
 function showPeriod(coin, period, item) {
-
   const id = coin + '-' + period;
 
   const volumeText =
@@ -641,8 +639,8 @@ function showPeriod(coin, period, item) {
     ' | EMA20：' + item.ema20.toFixed(2) +
     ' | EMA50：' + item.ema50.toFixed(2) +
     ' | EMA差距：' + item.distance.toFixed(3) + '%' +
-   ' | ' + volumeText +
-' | ' + divergenceText
+    ' | ' + volumeText +
+    ' | ' + divergenceText
   );
 }
 
@@ -651,11 +649,9 @@ function showPeriod(coin, period, item) {
 // ===============================
 
 async function analyzeCoin(coin) {
-
   const periodData = {};
 
   for (const period of PERIODS) {
-
     const rows = await loadCandles(coin, period);
 
     const result = analyzePeriod(rows);
@@ -689,7 +685,6 @@ async function analyzeCoin(coin) {
   const reasons = [];
 
   for (const period of PERIODS) {
-
     const item = periodData[period];
 
     reasons.push(
@@ -711,9 +706,7 @@ async function analyzeCoin(coin) {
 // ===============================
 
 async function loadMarketData() {
-
   try {
-
     const response = await fetch(
       './data/market_data.jsonl?t=' + Date.now(),
       { cache: 'no-store' }
@@ -735,11 +728,9 @@ async function loadMarketData() {
     }
 
     const latest = rows[rows.length - 1];
-
     const markets = latest.markets || [];
 
     for (const coin of Object.keys(SYMBOLS)) {
-
       const symbol = SYMBOLS[coin];
 
       const item = markets.find(
@@ -763,9 +754,7 @@ async function loadMarketData() {
         Number(item.volume_24h).toLocaleString('en-US')
       );
     }
-
   } catch (error) {
-
     console.log('资金数据读取错误：', error);
 
     for (const coin of Object.keys(SYMBOLS)) {
@@ -782,7 +771,6 @@ async function loadMarketData() {
 // ===============================
 
 async function loadAllAnalysis() {
-
   if (loadingAnalysis) return;
 
   loadingAnalysis = true;
@@ -790,7 +778,6 @@ async function loadAllAnalysis() {
   setText('status', '正在分析BTC、ETH、SOL三个币种...');
 
   try {
-
     const results = await Promise.allSettled([
       analyzeCoin('BTC'),
       analyzeCoin('ETH'),
@@ -802,22 +789,24 @@ async function loadAllAnalysis() {
     let success = 0;
 
     results.forEach((result, index) => {
-
       const coin = coins[index];
 
       if (result.status === 'fulfilled') {
-
         success++;
-
       } else {
-
         console.error(coin + '分析失败：', result.reason);
 
         setText(coin + '-signal', '数据不足，暂不可分析');
 
-        setText(coin + '-score', result.reason.message);
+        setText(
+          coin + '-score',
+          result.reason.message
+        );
 
-        setText(coin + '-reason', '请检查K线文件或数据格式');
+        setText(
+          coin + '-reason',
+          '请检查K线文件或数据格式'
+        );
       }
     });
 
@@ -832,13 +821,9 @@ async function loadAllAnalysis() {
       'status',
       '分析完成：' + success + ' / 3 个币种成功'
     );
-
   } catch (error) {
-
     setText('status', '系统错误：' + error.message);
-
   } finally {
-
     loadingAnalysis = false;
   }
 }
