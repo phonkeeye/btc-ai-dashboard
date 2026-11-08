@@ -12,27 +12,37 @@ body {
   color: #fff;
   font-family: Arial, sans-serif;
 }
-h1 { color: #f0b90b; font-size: 24px; }
+h1 {
+  color: #f0b90b;
+  font-size: 24px;
+}
 .card {
   background: #1d293b;
   padding: 18px;
   border-radius: 12px;
   margin: 14px 0;
 }
-.label { color: #9caec5; font-size: 14px; }
+.label {
+  color: #9caec5;
+  font-size: 14px;
+}
 .value {
   font-size: 25px;
   font-weight: bold;
   margin-top: 8px;
   word-break: break-word;
 }
-.green { color: #20d69a; }
-.red { color: #ff6262; }
 .small {
   font-size: 13px;
   color: #9caec5;
   line-height: 1.8;
   word-break: break-word;
+}
+.positive {
+  color: #20d69a;
+}
+.negative {
+  color: #ff6262;
 }
 button {
   background: #f0b90b;
@@ -49,23 +59,23 @@ button {
 <h1>₿ BTC AI量化终端</h1>
 <p class="small">实时行情 · 多周期分析 · AI观察 · 模拟交易</p>
 <div class="card">
-  <div class="label">BTC实时价格（OKX）</div>
+  <div class="label">BTC 实时价格（OKX）</div>
   <div class="value" id="price">正在连接行情...</div>
   <div class="small" id="liveTime">等待实时行情...</div>
+  <div class="small" id="btcStats">等待24小时数据...</div>
 </div>
-
 <div class="card">
   <div class="label">ETH 实时价格（OKX）</div>
   <div class="value" id="ethPrice">正在连接行情...</div>
   <div class="small" id="ethTime">等待实时行情...</div>
+  <div class="small" id="ethStats">等待24小时数据...</div>
 </div>
-
 <div class="card">
   <div class="label">SOL 实时价格（OKX）</div>
   <div class="value" id="solPrice">正在连接行情...</div>
   <div class="small" id="solTime">等待实时行情...</div>
+  <div class="small" id="solStats">等待24小时数据...</div>
 </div>
-
 <div class="card">
   <div class="label">AI观察信号</div>
   <div class="value" id="signal">等待数据</div>
@@ -100,16 +110,15 @@ button {
   <button onclick="loadData()">刷新AI分析</button>
 </div>
 <script>
+// OKX 行情接口
 const OKX_URL =
   'https://www.okx.com/api/v5/market/ticker?instId=BTC-USDT-SWAP';
-
 const ETH_URL =
   'https://www.okx.com/api/v5/market/ticker?instId=ETH-USDT-SWAP';
-
 const SOL_URL =
   'https://www.okx.com/api/v5/market/ticker?instId=SOL-USDT-SWAP';
-
 let loadingLive = false;
+let loadingAltLive = false;
 let loadingHistory = false;
 // 格式化价格
 function formatPrice(value) {
@@ -118,7 +127,33 @@ function formatPrice(value) {
     maximumFractionDigits: 2
   });
 }
-// 获取OKX实时价格
+// 显示24小时行情统计
+function showStats(ticker, elementId) {
+  const element = document.getElementById(elementId);
+  const last = Number(ticker.last);
+  const open = Number(ticker.open24h);
+  const high = Number(ticker.high24h);
+  const low = Number(ticker.low24h);
+  if (
+    !Number.isFinite(last) ||
+    !Number.isFinite(open) ||
+    !Number.isFinite(high) ||
+    !Number.isFinite(low) ||
+    open <= 0
+  ) {
+    element.textContent = '24小时统计数据暂不可用';
+    return;
+  }
+  const change = ((last - open) / open) * 100;
+  const sign = change > 0 ? '+' : '';
+  element.textContent =
+    '24小时涨跌：' + sign + change.toFixed(2) + '%' +
+    ' | 最高：' + formatPrice(high) +
+    ' | 最低：' + formatPrice(low);
+  element.className =
+    'small ' + (change >= 0 ? 'positive' : 'negative');
+}
+// 获取 BTC 实时行情
 async function updateLivePrice() {
   if (loadingLive) return;
   loadingLive = true;
@@ -131,7 +166,11 @@ async function updateLivePrice() {
       throw new Error('OKX接口请求失败：' + response.status);
     }
     const result = await response.json();
-    if (result.code !== '0' || !result.data || !result.data.length) {
+    if (
+      result.code !== '0' ||
+      !result.data ||
+      !result.data.length
+    ) {
       throw new Error('OKX没有返回有效行情');
     }
     const ticker = result.data[0];
@@ -139,6 +178,7 @@ async function updateLivePrice() {
       formatPrice(ticker.last);
     document.getElementById('liveTime').textContent =
       '实时行情更新时间：' + new Date().toLocaleString();
+    showStats(ticker, 'btcStats');
   } catch (error) {
     document.getElementById('liveTime').textContent =
       '实时行情获取失败：' + error.message;
@@ -146,46 +186,44 @@ async function updateLivePrice() {
   } finally {
     loadingLive = false;
   }
-}// 获取 ETH 和 SOL 实时价格
-let loadingAltLive = false;
-
+}
+// 获取 ETH 和 SOL 实时行情
 async function updateAltPrices() {
   if (loadingAltLive) return;
   loadingAltLive = true;
-
-  async function updateOne(url, priceId, timeId) {
+  async function updateOne(url, priceId, timeId, statsId) {
     try {
       const response = await fetch(
         url + '&t=' + Date.now(),
         { cache: 'no-store' }
       );
-
       if (!response.ok) {
         throw new Error('接口请求失败：' + response.status);
       }
-
       const result = await response.json();
-
-      if (result.code !== '0' || !result.data || !result.data.length) {
+      if (
+        result.code !== '0' ||
+        !result.data ||
+        !result.data.length
+      ) {
         throw new Error('没有返回有效行情');
       }
-
+      const ticker = result.data[0];
       document.getElementById(priceId).textContent =
-        formatPrice(result.data[0].last);
-
+        formatPrice(ticker.last);
       document.getElementById(timeId).textContent =
         '实时行情更新时间：' + new Date().toLocaleString();
-
+      showStats(ticker, statsId);
     } catch (error) {
       document.getElementById(timeId).textContent =
         '行情获取失败：' + error.message;
+      console.log(error);
     }
   }
-
   try {
     await Promise.all([
-      updateOne(ETH_URL, 'ethPrice', 'ethTime'),
-      updateOne(SOL_URL, 'solPrice', 'solTime')
+      updateOne(ETH_URL, 'ethPrice', 'ethTime', 'ethStats'),
+      updateOne(SOL_URL, 'solPrice', 'solTime', 'solStats')
     ]);
   } finally {
     loadingAltLive = false;
@@ -206,7 +244,7 @@ function showPeriod(id, analysis, key) {
     ' | EMA50：' + (item.ema50 ?? '--') +
     ' | 强度：' + (item.trend_strength ?? '--');
 }
-// 获取GitHub历史分析数据
+// 获取 GitHub 历史分析数据
 async function loadData() {
   if (loadingHistory) return;
   loadingHistory = true;
@@ -227,8 +265,6 @@ async function loadData() {
     }
     const data = JSON.parse(lines[lines.length - 1]);
     const analysis = data.analysis || {};
-    // 注意：这里不再修改BTC价格
-    // 实时价格只由OKX接口控制
     document.getElementById('signal').textContent =
       data.signal ?? '等待分析';
     document.getElementById('score').textContent =
@@ -248,7 +284,8 @@ async function loadData() {
     status.textContent =
       'AI数据读取成功，共 ' + lines.length + ' 条历史记录';
   } catch (error) {
-    status.textContent = 'AI数据读取失败：' + error.message;
+    status.textContent =
+      'AI数据读取失败：' + error.message;
     console.log(error);
   } finally {
     loadingHistory = false;
@@ -258,10 +295,9 @@ async function loadData() {
 updateLivePrice();
 updateAltPrices();
 loadData();
-// BTC、ETH、SOL 实时价格每3秒更新
+// BTC、ETH、SOL 实时行情每3秒更新
 setInterval(updateLivePrice, 3000);
 setInterval(updateAltPrices, 3000);
-
 // AI分析每60秒更新
 setInterval(loadData, 60000);
 </script>
