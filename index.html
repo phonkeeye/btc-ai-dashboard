@@ -4,10 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BTC AI量化终端</title>
+
 <style>
 body {
   margin: 0;
-  padding: 18px;
+  padding: 16px;
   background: #101827;
   color: #fff;
   font-family: Arial, sans-serif;
@@ -18,7 +19,7 @@ h1 {
 }
 .card {
   background: #1d293b;
-  padding: 18px;
+  padding: 16px;
   border-radius: 12px;
   margin: 14px 0;
 }
@@ -27,7 +28,7 @@ h1 {
   font-size: 14px;
 }
 .value {
-  font-size: 25px;
+  font-size: 24px;
   font-weight: bold;
   margin-top: 8px;
   word-break: break-word;
@@ -44,6 +45,13 @@ h1 {
 .negative {
   color: #ff6262;
 }
+.neutral {
+  color: #f0b90b;
+}
+.divider {
+  border-top: 1px solid #34445b;
+  margin: 14px 0;
+}
 button {
   background: #f0b90b;
   color: #101827;
@@ -55,251 +63,635 @@ button {
 }
 </style>
 </head>
+
 <body>
+
 <h1>₿ BTC AI量化终端</h1>
-<p class="small">实时行情 · 多周期分析 · AI观察 · 模拟交易</p>
+<p class="small">实时行情 · 三币独立分析 · 多周期趋势 · 量化观察</p>
+
+<!-- BTC行情 -->
 <div class="card">
   <div class="label">BTC 实时价格（OKX）</div>
-  <div class="value" id="price">正在连接行情...</div>
-  <div class="small" id="liveTime">等待实时行情...</div>
+  <div class="value" id="btcPrice">正在连接行情...</div>
+  <div class="small" id="btcTime">等待实时行情...</div>
   <div class="small" id="btcStats">等待24小时数据...</div>
 </div>
+
+<!-- ETH行情 -->
 <div class="card">
   <div class="label">ETH 实时价格（OKX）</div>
   <div class="value" id="ethPrice">正在连接行情...</div>
   <div class="small" id="ethTime">等待实时行情...</div>
   <div class="small" id="ethStats">等待24小时数据...</div>
 </div>
+
+<!-- SOL行情 -->
 <div class="card">
   <div class="label">SOL 实时价格（OKX）</div>
   <div class="value" id="solPrice">正在连接行情...</div>
   <div class="small" id="solTime">等待实时行情...</div>
   <div class="small" id="solStats">等待24小时数据...</div>
 </div>
-<div class="card">
-  <div class="label">AI观察信号</div>
-  <div class="value" id="signal">等待数据</div>
+
+<!-- 三币分析 -->
+<div id="analysisArea">
+  <div class="card">
+    <div class="label">BTC 独立量化分析</div>
+    <div class="value" id="BTC-signal">等待分析</div>
+    <div class="small" id="BTC-score">等待数据</div>
+    <div class="small" id="BTC-reason">等待数据</div>
+    <div class="divider"></div>
+    <div class="label">15分钟</div>
+    <div class="small" id="BTC-15m">等待数据</div>
+    <div class="label">1小时</div>
+    <div class="small" id="BTC-1H">等待数据</div>
+    <div class="label">4小时</div>
+    <div class="small" id="BTC-4H">等待数据</div>
+    <div class="divider"></div>
+    <div class="small" id="BTC-extra">等待资金数据</div>
+  </div>
+
+  <div class="card">
+    <div class="label">ETH 独立量化分析</div>
+    <div class="value" id="ETH-signal">等待分析</div>
+    <div class="small" id="ETH-score">等待数据</div>
+    <div class="small" id="ETH-reason">等待数据</div>
+    <div class="divider"></div>
+    <div class="label">15分钟</div>
+    <div class="small" id="ETH-15m">等待数据</div>
+    <div class="label">1小时</div>
+    <div class="small" id="ETH-1H">等待数据</div>
+    <div class="label">4小时</div>
+    <div class="small" id="ETH-4H">等待数据</div>
+    <div class="divider"></div>
+    <div class="small" id="ETH-extra">等待资金数据</div>
+  </div>
+
+  <div class="card">
+    <div class="label">SOL 独立量化分析</div>
+    <div class="value" id="SOL-signal">等待分析</div>
+    <div class="small" id="SOL-score">等待数据</div>
+    <div class="small" id="SOL-reason">等待数据</div>
+    <div class="divider"></div>
+    <div class="label">15分钟</div>
+    <div class="small" id="SOL-15m">等待数据</div>
+    <div class="label">1小时</div>
+    <div class="small" id="SOL-1H">等待数据</div>
+    <div class="label">4小时</div>
+    <div class="small" id="SOL-4H">等待数据</div>
+    <div class="divider"></div>
+    <div class="small" id="SOL-extra">等待资金数据</div>
+  </div>
 </div>
+
 <div class="card">
-  <div class="label">多空评分</div>
-  <div class="value" id="score">等待数据</div>
-  <div class="small" id="difference"></div>
-</div>
-<div class="card">
-  <div class="label">15分钟分析</div>
-  <div class="small" id="m15">等待数据</div>
-</div>
-<div class="card">
-  <div class="label">1小时分析</div>
-  <div class="small" id="h1">等待数据</div>
-</div>
-<div class="card">
-  <div class="label">4小时分析</div>
-  <div class="small" id="h4">等待数据</div>
-</div>
-<div class="card">
-  <div class="label">资金费率</div>
-  <div class="value" id="funding">--</div>
-  <div class="label" style="margin-top:16px">持仓量</div>
-  <div class="value" id="oi">--</div>
-</div>
-<div class="card">
-  <div class="label">AI分析数据更新时间</div>
-  <div class="small" id="updated">等待数据</div>
+  <div class="label">系统状态</div>
+  <div class="small" id="updated">等待更新时间</div>
   <div class="small" id="status">正在读取系统数据...</div>
-  <button onclick="loadData()">刷新AI分析</button>
+  <button onclick="loadAllAnalysis()">刷新全部分析</button>
 </div>
+
 <script>
-// OKX 行情接口
-const OKX_URL =
-  'https://www.okx.com/api/v5/market/ticker?instId=BTC-USDT-SWAP';
-const ETH_URL =
-  'https://www.okx.com/api/v5/market/ticker?instId=ETH-USDT-SWAP';
-const SOL_URL =
-  'https://www.okx.com/api/v5/market/ticker?instId=SOL-USDT-SWAP';
-let loadingLive = false;
-let loadingAltLive = false;
-let loadingHistory = false;
-// 格式化价格
+
+// ===============================
+// 基础设置
+// ===============================
+
+const SYMBOLS = {
+  BTC: 'BTC-USDT-SWAP',
+  ETH: 'ETH-USDT-SWAP',
+  SOL: 'SOL-USDT-SWAP'
+};
+
+const PERIODS = ['15m', '1H', '4H'];
+
+const WEIGHTS = {
+  '15m': 1,
+  '1H': 2,
+  '4H': 3
+};
+
+let loadingPrices = false;
+let loadingAnalysis = false;
+
+function el(id) {
+  return document.getElementById(id);
+}
+
 function formatPrice(value) {
   return '$' + Number(value).toLocaleString('en-US', {
     minimumFractionDigits: 2,
-    maximumFractionDigits: 2
+    maximumFractionDigits: 4
   });
 }
-// 显示24小时行情统计
-function showStats(ticker, elementId) {
-  const element = document.getElementById(elementId);
+
+function setText(id, text) {
+  el(id).textContent = text;
+}
+
+// ===============================
+// OKX实时行情
+// ===============================
+
+async function getTicker(instId) {
+  const url =
+    'https://www.okx.com/api/v5/market/ticker?instId=' +
+    instId + '&t=' + Date.now();
+
+  const response = await fetch(url, {
+    cache: 'no-store'
+  });
+
+  if (!response.ok) {
+    throw new Error('行情接口错误：' + response.status);
+  }
+
+  const result = await response.json();
+
+  if (result.code !== '0' || !result.data.length) {
+    throw new Error('没有获取到行情');
+  }
+
+  return result.data[0];
+}
+
+function showStats(ticker, id) {
   const last = Number(ticker.last);
   const open = Number(ticker.open24h);
   const high = Number(ticker.high24h);
   const low = Number(ticker.low24h);
-  if (
-    !Number.isFinite(last) ||
-    !Number.isFinite(open) ||
-    !Number.isFinite(high) ||
-    !Number.isFinite(low) ||
-    open <= 0
-  ) {
-    element.textContent = '24小时统计数据暂不可用';
+
+  if (!open || !Number.isFinite(last)) {
+    setText(id, '24小时统计暂不可用');
     return;
   }
-  const change = ((last - open) / open) * 100;
+
+  const change = (last - open) / open * 100;
+
   const sign = change > 0 ? '+' : '';
-  element.textContent =
-    '24小时涨跌：' + sign + change.toFixed(2) + '%' +
-    ' | 最高：' + formatPrice(high) +
-    ' | 最低：' + formatPrice(low);
-  element.className =
+
+  setText(
+    id,
+    '24小时涨跌：' + sign + change.toFixed(2) +
+    '% | 最高：' + formatPrice(high) +
+    ' | 最低：' + formatPrice(low)
+  );
+
+  el(id).className =
     'small ' + (change >= 0 ? 'positive' : 'negative');
 }
-// 获取 BTC 实时行情
-async function updateLivePrice() {
-  if (loadingLive) return;
-  loadingLive = true;
+
+async function updatePrices() {
+  if (loadingPrices) return;
+
+  loadingPrices = true;
+
   try {
-    const response = await fetch(
-      OKX_URL + '&t=' + Date.now(),
-      { cache: 'no-store' }
-    );
-    if (!response.ok) {
-      throw new Error('OKX接口请求失败：' + response.status);
-    }
-    const result = await response.json();
-    if (
-      result.code !== '0' ||
-      !result.data ||
-      !result.data.length
-    ) {
-      throw new Error('OKX没有返回有效行情');
-    }
-    const ticker = result.data[0];
-    document.getElementById('price').textContent =
-      formatPrice(ticker.last);
-    document.getElementById('liveTime').textContent =
-      '实时行情更新时间：' + new Date().toLocaleString();
-    showStats(ticker, 'btcStats');
-  } catch (error) {
-    document.getElementById('liveTime').textContent =
-      '实时行情获取失败：' + error.message;
-    console.log(error);
-  } finally {
-    loadingLive = false;
-  }
-}
-// 获取 ETH 和 SOL 实时行情
-async function updateAltPrices() {
-  if (loadingAltLive) return;
-  loadingAltLive = true;
-  async function updateOne(url, priceId, timeId, statsId) {
-    try {
-      const response = await fetch(
-        url + '&t=' + Date.now(),
-        { cache: 'no-store' }
+    for (const [coin, instId] of Object.entries(SYMBOLS)) {
+
+      const ticker = await getTicker(instId);
+
+      const prefix = coin === 'BTC' ? 'btc' : coin.toLowerCase();
+
+      setText(prefix + 'Price', formatPrice(ticker.last));
+
+      setText(
+        prefix + 'Time',
+        '实时行情更新时间：' + new Date().toLocaleString()
       );
-      if (!response.ok) {
-        throw new Error('接口请求失败：' + response.status);
-      }
-      const result = await response.json();
-      if (
-        result.code !== '0' ||
-        !result.data ||
-        !result.data.length
-      ) {
-        throw new Error('没有返回有效行情');
-      }
-      const ticker = result.data[0];
-      document.getElementById(priceId).textContent =
-        formatPrice(ticker.last);
-      document.getElementById(timeId).textContent =
-        '实时行情更新时间：' + new Date().toLocaleString();
-      showStats(ticker, statsId);
-    } catch (error) {
-      document.getElementById(timeId).textContent =
-        '行情获取失败：' + error.message;
-      console.log(error);
+
+      showStats(ticker, prefix + 'Stats');
     }
-  }
-  try {
-    await Promise.all([
-      updateOne(ETH_URL, 'ethPrice', 'ethTime', 'ethStats'),
-      updateOne(SOL_URL, 'solPrice', 'solTime', 'solStats')
-    ]);
+
+  } catch (error) {
+    console.log('行情错误：', error);
   } finally {
-    loadingAltLive = false;
+    loadingPrices = false;
   }
 }
-// 显示周期分析
-function showPeriod(id, analysis, key) {
-  const item = analysis[key];
-  const element = document.getElementById(id);
-  if (!item) {
-    element.textContent = '暂无数据';
-    return;
+
+// ===============================
+// 读取K线文件
+// ===============================
+
+async function loadCandles(coin, period) {
+
+  const instId = SYMBOLS[coin];
+
+  const path =
+    './data/candles/' +
+    instId + '_' + period + '.jsonl';
+
+  const response = await fetch(
+    path + '?t=' + Date.now(),
+    { cache: 'no-store' }
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      coin + ' ' + period + ' 文件读取失败：' + response.status
+    );
   }
-  element.textContent =
-    '趋势：' + (item.trend ?? '--') +
-    ' | RSI：' + (item.rsi14 ?? '--') +
-    ' | EMA20：' + (item.ema20 ?? '--') +
-    ' | EMA50：' + (item.ema50 ?? '--') +
-    ' | 强度：' + (item.trend_strength ?? '--');
+
+  const text = await response.text();
+
+  const rows = text
+    .split('\n')
+    .filter(Boolean)
+    .map(line => JSON.parse(line))
+    .filter(row =>
+      Number.isFinite(Number(row.close)) &&
+      Number(row.close) > 0
+    );
+
+  rows.sort((a, b) => Number(a.time) - Number(b.time));
+
+  if (rows.length < 60) {
+    throw new Error(
+      coin + ' ' + period + ' K线数量不足60根'
+    );
+  }
+
+  return rows;
 }
-// 获取 GitHub 历史分析数据
-async function loadData() {
-  if (loadingHistory) return;
-  loadingHistory = true;
-  const status = document.getElementById('status');
-  status.textContent = '正在读取AI分析数据...';
+
+// ===============================
+// EMA计算
+// ===============================
+
+function calculateEMA(values, period) {
+
+  if (values.length < period) return null;
+
+  const multiplier = 2 / (period + 1);
+
+  let ema = values[0];
+
+  for (let i = 1; i < values.length; i++) {
+    ema =
+      values[i] * multiplier +
+      ema * (1 - multiplier);
+  }
+
+  return ema;
+}
+
+// ===============================
+// RSI计算
+// ===============================
+
+function calculateRSI(values, period = 14) {
+
+  if (values.length <= period) return null;
+
+  let gains = 0;
+  let losses = 0;
+
+  for (let i = 1; i <= period; i++) {
+
+    const change = values[i] - values[i - 1];
+
+    if (change > 0) gains += change;
+    if (change < 0) losses -= change;
+  }
+
+  let avgGain = gains / period;
+  let avgLoss = losses / period;
+
+  for (let i = period + 1; i < values.length; i++) {
+
+    const change = values[i] - values[i - 1];
+
+    const gain = Math.max(change, 0);
+    const loss = Math.max(-change, 0);
+
+    avgGain =
+      (avgGain * (period - 1) + gain) / period;
+
+    avgLoss =
+      (avgLoss * (period - 1) + loss) / period;
+  }
+
+  if (avgLoss === 0) return 100;
+
+  const rs = avgGain / avgLoss;
+
+  return 100 - (100 / (1 + rs));
+}
+
+// ===============================
+// 单周期分析
+// ===============================
+
+function analyzePeriod(rows) {
+
+  const closes = rows.map(row => Number(row.close));
+
+  const ema20 = calculateEMA(closes, 20);
+  const ema50 = calculateEMA(closes, 50);
+  const rsi = calculateRSI(closes, 14);
+
+  const lastPrice = closes[closes.length - 1];
+
+  if (
+    ema20 === null ||
+    ema50 === null ||
+    rsi === null
+  ) {
+    throw new Error('指标计算失败');
+  }
+
+  const distance =
+    ((ema20 - ema50) / ema50) * 100;
+
+  let trend = '震荡';
+
+  if (ema20 > ema50) trend = '偏多';
+  if (ema20 < ema50) trend = '偏空';
+
+  let longPoints = 0;
+  let shortPoints = 0;
+
+  // EMA趋势判断
+  if (ema20 > ema50) longPoints += 2;
+  if (ema20 < ema50) shortPoints += 2;
+
+  // RSI判断
+  if (rsi >= 55) longPoints += 1;
+  if (rsi <= 45) shortPoints += 1;
+
+  // 价格与EMA20关系
+  if (lastPrice > ema20) longPoints += 1;
+  if (lastPrice < ema20) shortPoints += 1;
+
+  return {
+    trend,
+    rsi,
+    ema20,
+    ema50,
+    distance,
+    lastPrice,
+    longPoints,
+    shortPoints,
+    time: rows[rows.length - 1].time
+  };
+}
+
+// ===============================
+// 三周期综合评分
+// ===============================
+
+function calculateSignal(periodData) {
+
+  let longScore = 0;
+  let shortScore = 0;
+  let totalWeight = 0;
+
+  for (const period of PERIODS) {
+
+    const item = periodData[period];
+    const weight = WEIGHTS[period];
+
+    longScore += item.longPoints * weight;
+    shortScore += item.shortPoints * weight;
+
+    totalWeight += 4 * weight;
+  }
+
+  const longPercent =
+    longScore / totalWeight * 100;
+
+  const shortPercent =
+    shortScore / totalWeight * 100;
+
+  const difference = longPercent - shortPercent;
+
+  let signal = '中性观望';
+
+  if (difference >= 20) {
+    signal = '偏多观察';
+  } else if (difference <= -20) {
+    signal = '偏空观察';
+  }
+
+  return {
+    signal,
+    longPercent,
+    shortPercent,
+    difference
+  };
+}
+
+// ===============================
+// 显示单周期结果
+// ===============================
+
+function showPeriod(coin, period, item) {
+
+  const id = coin + '-' + period;
+
+  setText(
+    id,
+    '趋势：' + item.trend +
+    ' | RSI14：' + item.rsi.toFixed(2) +
+    ' | EMA20：' + item.ema20.toFixed(2) +
+    ' | EMA50：' + item.ema50.toFixed(2) +
+    ' | EMA差距：' + item.distance.toFixed(3) + '%'
+  );
+}
+
+// ===============================
+// 分析单个币种
+// ===============================
+
+async function analyzeCoin(coin) {
+
+  const periodData = {};
+
+  for (const period of PERIODS) {
+
+    const rows = await loadCandles(coin, period);
+
+    const result = analyzePeriod(rows);
+
+    periodData[period] = result;
+
+    showPeriod(coin, period, result);
+  }
+
+  const result = calculateSignal(periodData);
+
+  const signalElement = el(coin + '-signal');
+
+  setText(coin + '-signal', result.signal);
+
+  signalElement.className =
+    'value ' +
+    (result.difference > 0
+      ? 'positive'
+      : result.difference < 0
+      ? 'negative'
+      : 'neutral');
+
+  setText(
+    coin + '-score',
+    '多头评分：' + result.longPercent.toFixed(1) +
+    ' / 空头评分：' + result.shortPercent.toFixed(1) +
+    ' / 分数差：' + result.difference.toFixed(1)
+  );
+
+  const reasons = [];
+
+  for (const period of PERIODS) {
+
+    const item = periodData[period];
+
+    reasons.push(
+      period + ' ' + item.trend +
+      '，RSI ' + item.rsi.toFixed(1)
+    );
+  }
+
+  setText(
+    coin + '-reason',
+    '判断依据：' + reasons.join('；')
+  );
+
+  return result;
+}
+
+// ===============================
+// 读取资金费率和持仓量
+// ===============================
+
+async function loadMarketData() {
+
   try {
+
     const response = await fetch(
-      './data/btc_history.jsonl?t=' + Date.now(),
+      './data/market_data.jsonl?t=' + Date.now(),
       { cache: 'no-store' }
     );
+
     if (!response.ok) {
-      throw new Error('历史数据读取失败：' + response.status);
+      throw new Error('资金数据读取失败');
     }
+
     const text = await response.text();
-    const lines = text.trim().split('\n').filter(Boolean);
-    if (!lines.length) {
-      throw new Error('历史数据文件为空');
+
+    const rows = text
+      .split('\n')
+      .filter(Boolean)
+      .map(line => JSON.parse(line));
+
+    if (!rows.length) return;
+
+    const latest = rows[rows.length - 1];
+
+    for (const coin of Object.keys(SYMBOLS)) {
+
+      const item = latest[coin];
+
+      if (!item) continue;
+
+      setText(
+        coin + '-extra',
+        '资金费率：' + (item.funding_rate ?? '--') +
+        ' | 持仓量：' + (item.open_interest ?? '--') +
+        ' | 24小时成交量：' + (item.volume_24h ?? '--')
+      );
     }
-    const data = JSON.parse(lines[lines.length - 1]);
-    const analysis = data.analysis || {};
-    document.getElementById('signal').textContent =
-      data.signal ?? '等待分析';
-    document.getElementById('score').textContent =
-      '多头 ' + (data.long_score ?? '--') +
-      ' / 空头 ' + (data.short_score ?? '--');
-    document.getElementById('difference').textContent =
-      '分数差：' + (data.score_difference ?? '--');
-    showPeriod('m15', analysis, '15m');
-    showPeriod('h1', analysis, '1H');
-    showPeriod('h4', analysis, '4H');
-    document.getElementById('funding').textContent =
-      data.funding_rate ?? '--';
-    document.getElementById('oi').textContent =
-      data.open_interest ?? '--';
-    document.getElementById('updated').textContent =
-      data.timestamp ?? data.time ?? '暂无更新时间';
-    status.textContent =
-      'AI数据读取成功，共 ' + lines.length + ' 条历史记录';
+
   } catch (error) {
-    status.textContent =
-      'AI数据读取失败：' + error.message;
-    console.log(error);
-  } finally {
-    loadingHistory = false;
+
+    console.log('资金数据读取错误：', error);
+
+    for (const coin of Object.keys(SYMBOLS)) {
+      setText(
+        coin + '-extra',
+        '资金费率和持仓量暂不可用'
+      );
+    }
   }
 }
-// 页面打开后立即执行
-updateLivePrice();
-updateAltPrices();
-loadData();
-// BTC、ETH、SOL 实时行情每3秒更新
-setInterval(updateLivePrice, 3000);
-setInterval(updateAltPrices, 3000);
-// AI分析每60秒更新
-setInterval(loadData, 60000);
+
+// ===============================
+// 总分析入口
+// ===============================
+
+async function loadAllAnalysis() {
+
+  if (loadingAnalysis) return;
+
+  loadingAnalysis = true;
+
+  setText('status', '正在分析BTC、ETH、SOL三个币种...');
+
+  try {
+
+    const results = await Promise.allSettled([
+      analyzeCoin('BTC'),
+      analyzeCoin('ETH'),
+      analyzeCoin('SOL')
+    ]);
+
+    const coins = ['BTC', 'ETH', 'SOL'];
+
+    let success = 0;
+
+    results.forEach((result, index) => {
+
+      const coin = coins[index];
+
+      if (result.status === 'fulfilled') {
+
+        success++;
+
+      } else {
+
+        console.error(coin + '分析失败：', result.reason);
+
+        setText(coin + '-signal', '数据不足，暂不可分析');
+
+        setText(coin + '-score', result.reason.message);
+
+        setText(coin + '-reason', '请检查K线文件或数据格式');
+      }
+    });
+
+    await loadMarketData();
+
+    setText(
+      'updated',
+      '分析更新时间：' + new Date().toLocaleString()
+    );
+
+    setText(
+      'status',
+      '分析完成：' + success + ' / 3 个币种成功'
+    );
+
+  } catch (error) {
+
+    setText('status', '系统错误：' + error.message);
+
+  } finally {
+
+    loadingAnalysis = false;
+  }
+}
+
+// ===============================
+// 启动
+// ===============================
+
+updatePrices();
+loadAllAnalysis();
+
+setInterval(updatePrices, 3000);
+setInterval(loadAllAnalysis, 60000);
+
 </script>
+
 </body>
 </html>
