@@ -1,11 +1,6 @@
 import json
 import os
 import bisect
-from datetime import datetime, timezone
-
-# =========================
-# 基础配置
-# =========================
 
 DATA_DIR = "data/candles"
 
@@ -16,30 +11,18 @@ SYMBOLS = [
 ]
 
 INITIAL_CAPITAL = 10000.0
-
-# 每笔交易最多承担账户权益的 1% 风险
 RISK_PER_TRADE = 0.01
-
-# 不使用杠杆，名义仓位不超过账户权益
 MAX_POSITION_MULTIPLE = 1.0
 
-# 模拟手续费：单边 0.05%
 FEE_RATE = 0.0005
-
-# 模拟滑点：单边 0.03%
 SLIPPAGE_RATE = 0.0003
 
-# ATR 止损倍数
 ATR_STOP_MULTIPLE = 1.5
-
-# 止盈风险收益比
 REWARD_RISK_RATIO = 2.0
 
 EMA_FAST = 20
 EMA_SLOW = 50
 ATR_PERIOD = 14
-
-PERIODS = ["15m", "1H", "4H"]
 
 INTERVAL_MS = {
     "15m": 15 * 60 * 1000,
@@ -49,7 +32,7 @@ INTERVAL_MS = {
 
 
 # =========================
-# 读取 K 线
+# 读取历史K线
 # =========================
 
 def parse_candle(row):
@@ -132,8 +115,7 @@ def load_candles(symbol, period):
 
             try:
                 row = json.loads(line)
-                candle = parse_candle(row)
-                candles.append(candle)
+                candles.append(parse_candle(row))
 
             except Exception as error:
 
@@ -147,7 +129,6 @@ def load_candles(symbol, period):
 
     candles.sort(key=lambda x: x["time"])
 
-    # 去除重复时间记录
     unique = {}
 
     for candle in candles:
@@ -263,18 +244,15 @@ def build_closed_time_index(candles, period):
 
     interval = INTERVAL_MS[period]
 
-    close_times = [
+    return [
         candle["time"] + interval
         for candle in candles
     ]
 
-    return close_times
-
 
 def get_closed_candle(candles, close_times, signal_time):
 
-    # 只取已经收盘的高周期K线
-    index = bisect.bisect_right(
+    index = bisect.bisect_left(
         close_times,
         signal_time
     ) - 1
@@ -340,7 +318,6 @@ def get_signal(
     if trend_1h is None or trend_4h is None:
         return 0
 
-    # 三个周期方向一致才交易
     if trend_15m == trend_1h == trend_4h:
         return trend_15m
 
@@ -348,7 +325,7 @@ def get_signal(
 
 
 # =========================
-# 模拟交易
+# 模拟成交
 # =========================
 
 def apply_slippage(price, side):
@@ -379,19 +356,90 @@ def calculate_position_size(
     return min(quantity, max_quantity)
 
 
+def close_position(
+    position,
+    raw_exit,
+    exit_time,
+    reason,
+):
+
+    if position["direction"] == 1:
+
+        actual_exit = apply_slippage(
+            raw_exit,
+            "sell"
+        )
+
+        gross_pnl = (
+            actual_exit - position["entry"]
+        ) * position["quantity"]
+
+    else:
+
+        actual_exit = apply_slippage(
+            raw_exit,
+            "buy"
+        )
+
+        gross_pnl = (
+            position["entry"] - actual_exit
+        ) * position["quantity"]
+
+    exit_fee = (
+        actual_exit
+        * position["quantity"]
+        * FEE_RATE
+    )
+
+    net_pnl = (
+        gross_pnl
+        - exit_fee
+        - position["entry_fee"]
+    )
+
+    trade = {
+        "direction": (
+            "做多"
+            if position["direction"] == 1
+            else "做空"
+        ),
+        "entry_time": position["entry_time"],
+        "exit_time": exit_time,
+        "entry_price": round(position["entry"], 6),
+        "exit_price": round(actual_exit, 6),
+        "quantity": round(position["quantity"], 8),
+        "pnl": round(net_pnl, 4),
+        "reason": reason,
+    }
+
+    # 注意：开仓手续费已经在开仓时扣除
+    # 这里不能再次扣除开仓手续费
+    equity_change = gross_pnl - exit_fee
+
+    return trade, equity_change
+
+
+# =========================
+# 单币种回测
+# =========================
+
 def simulate_symbol(symbol):
 
     print("\n" + "=" * 60)
     print("开始回测：", symbol)
     print("=" * 60)
 
-    candles_15m = load_candles(symbol, "15m")
-    candles_1h = load_candles(symbol, "1H")
-    candles_4h = load_candles(symbol, "4H")
+    candles_15m = add_indicators(
+        load_candles(symbol, "15m")
+    )
 
-    candles_15m = add_indicators(candles_15m)
-    candles_1h = add_indicators(candles_1h)
-    candles_4h = add_indicators(candles_4h)
+    candles_1h = add_indicators(
+        load_candles(symbol, "1H")
+    )
+
+    candles_4h = add_indicators(
+        load_candles(symbol, "4H")
+    )
 
     close_times_1h = build_closed_time_index(
         candles_1h,
@@ -414,10 +462,7 @@ def simulate_symbol(symbol):
 
         candle = candles_15m[i]
 
-        # ---------------------
-        # 先管理已有仓位
-        # ---------------------
-
+        # 管理已有仓位
         if position is not None:
 
             exit_price = None
@@ -428,101 +473,59 @@ def simulate_symbol(symbol):
 
             if position["direction"] == 1:
 
-                hit_stop = candle["low"] <= stop
-                hit_target = candle["high"] >= target
+                if candle["open"] <= stop:
+                    exit_price = candle["open"]
+                    exit_reason = "止损跳空"
 
-                # 同一根K线同时触发，保守地按止损处理
-                if hit_stop:
+                elif candle["open"] >= target:
+                    exit_price = candle["open"]
+                    exit_reason = "止盈跳空"
+
+                elif candle["low"] <= stop:
                     exit_price = stop
                     exit_reason = "止损"
 
-                elif hit_target:
+                elif candle["high"] >= target:
                     exit_price = target
                     exit_reason = "止盈"
 
             else:
 
-                hit_stop = candle["high"] >= stop
-                hit_target = candle["low"] <= target
+                if candle["open"] >= stop:
+                    exit_price = candle["open"]
+                    exit_reason = "止损跳空"
 
-                if hit_stop:
+                elif candle["open"] <= target:
+                    exit_price = candle["open"]
+                    exit_reason = "止盈跳空"
+
+                elif candle["high"] >= stop:
                     exit_price = stop
                     exit_reason = "止损"
 
-                elif hit_target:
+                elif candle["low"] <= target:
                     exit_price = target
                     exit_reason = "止盈"
 
             if exit_price is not None:
 
-                if position["direction"] == 1:
-
-                    actual_exit = apply_slippage(
-                        exit_price,
-                        "sell"
-                    )
-
-                    gross_pnl = (
-                        actual_exit - position["entry"]
-                    ) * position["quantity"]
-
-                else:
-
-                    actual_exit = apply_slippage(
-                        exit_price,
-                        "buy"
-                    )
-
-                    gross_pnl = (
-                        position["entry"] - actual_exit
-                    ) * position["quantity"]
-
-                exit_fee = (
-                    actual_exit
-                    * position["quantity"]
-                    * FEE_RATE
+                trade, change = close_position(
+                    position,
+                    exit_price,
+                    candle["time"],
+                    exit_reason
                 )
 
-                net_pnl = (
-    gross_pnl
-    - exit_fee
-    - position["entry_fee"]
-)
+                trade["symbol"] = symbol
+                trades.append(trade)
 
-equity += gross_pnl - exit_fee
-
-                trades.append({
-                    "symbol": symbol,
-                    "direction": (
-                        "做多"
-                        if position["direction"] == 1
-                        else "做空"
-                    ),
-                    "entry_time": position["entry_time"],
-                    "exit_time": candle["time"],
-                    "entry_price": round(
-                        position["entry"], 6
-                    ),
-                    "exit_price": round(
-                        actual_exit, 6
-                    ),
-                    "quantity": round(
-                        position["quantity"], 8
-                    ),
-                    "pnl": round(net_pnl, 4),
-                    "reason": exit_reason,
-                })
-
+                equity += change
                 position = None
 
-                peak_equity = max(
-                    peak_equity,
-                    equity
-                )
+                peak_equity = max(peak_equity, equity)
 
                 drawdown = (
-                    (peak_equity - equity)
-                    / peak_equity
+                    (peak_equity - equity) / peak_equity
                     if peak_equity > 0
                     else 0
                 )
@@ -532,20 +535,13 @@ equity += gross_pnl - exit_fee
                     drawdown
                 )
 
-        # ---------------------
-        # 已有仓位时不再开新仓
-        # ---------------------
-
         if position is not None:
             continue
 
         if equity <= 0:
             break
 
-        # ---------------------
-        # 使用上一根已收盘K线判断
-        # ---------------------
-
+        # 上一根15分钟K线已经收盘
         signal_candle = candles_15m[i - 1]
 
         atr = signal_candle.get("atr")
@@ -564,26 +560,15 @@ equity += gross_pnl - exit_fee
         if signal == 0:
             continue
 
-        # 下一根15分钟K线开盘成交
+        # 下一根15分钟K线开盘模拟进场
         raw_entry = candle["open"]
 
         if signal == 1:
-
-            entry = apply_slippage(
-                raw_entry,
-                "buy"
-            )
-
+            entry = apply_slippage(raw_entry, "buy")
         else:
+            entry = apply_slippage(raw_entry, "sell")
 
-            entry = apply_slippage(
-                raw_entry,
-                "sell"
-            )
-
-        stop_distance = (
-            atr * ATR_STOP_MULTIPLE
-        )
+        stop_distance = atr * ATR_STOP_MULTIPLE
 
         quantity = calculate_position_size(
             equity,
@@ -594,11 +579,8 @@ equity += gross_pnl - exit_fee
         if quantity <= 0:
             continue
 
-        entry_fee = (
-            entry * quantity * FEE_RATE
-        )
+        entry_fee = entry * quantity * FEE_RATE
 
-        # 开仓手续费从账户权益扣除
         equity -= entry_fee
 
         if signal == 1:
@@ -629,125 +611,69 @@ equity += gross_pnl - exit_fee
             "entry_fee": entry_fee,
         }
 
-    # ---------------------
-    # 数据结束时强制平仓
-    # ---------------------
-
+    # 历史数据结束，强制平仓
     if position is not None:
 
         last_candle = candles_15m[-1]
 
-        raw_exit = last_candle["close"]
-
-        if position["direction"] == 1:
-
-            actual_exit = apply_slippage(
-                raw_exit,
-                "sell"
-            )
-
-            gross_pnl = (
-                actual_exit - position["entry"]
-            ) * position["quantity"]
-
-        else:
-
-            actual_exit = apply_slippage(
-                raw_exit,
-                "buy"
-            )
-
-            gross_pnl = (
-                position["entry"] - actual_exit
-            ) * position["quantity"]
-
-        exit_fee = (
-            actual_exit
-            * position["quantity"]
-            * FEE_RATE
+        trade, change = close_position(
+            position,
+            last_candle["close"],
+            last_candle["time"],
+            "数据结束平仓"
         )
 
-        net_pnl = (
-            gross_pnl
-            - exit_fee
-            - position["entry_fee"]
-        )
+        trade["symbol"] = symbol
+        trades.append(trade)
 
-        equity += net_pnl
+        equity += change
 
-        trades.append({
-            "symbol": symbol,
-            "direction": (
-                "做多"
-                if position["direction"] == 1
-                else "做空"
-            ),
-            "entry_time": position["entry_time"],
-            "exit_time": last_candle["time"],
-            "entry_price": round(
-                position["entry"], 6
-            ),
-            "exit_price": round(
-                actual_exit, 6
-            ),
-            "quantity": round(
-                position["quantity"], 8
-            ),
-            "pnl": round(net_pnl, 4),
-            "reason": "数据结束平仓",
-        })
-
-    # ---------------------
-    # 统计结果
-    # ---------------------
-
+    # 统计
     wins = [
-        trade for trade in trades
-        if trade["pnl"] > 0
+        t for t in trades
+        if t["pnl"] > 0
     ]
 
     losses = [
-        trade for trade in trades
-        if trade["pnl"] <= 0
+        t for t in trades
+        if t["pnl"] <= 0
     ]
 
     total_pnl = equity - INITIAL_CAPITAL
 
     win_rate = (
         len(wins) / len(trades) * 100
-        if trades
-        else 0
+        if trades else 0
     )
 
     gross_profit = sum(
-        trade["pnl"] for trade in wins
+        t["pnl"] for t in wins
     )
 
     gross_loss = abs(sum(
-        trade["pnl"] for trade in losses
+        t["pnl"] for t in losses
     ))
 
     profit_factor = (
         gross_profit / gross_loss
-        if gross_loss > 0
-        else 0
+        if gross_loss > 0 else 0
     )
 
     print("\n回测结果：", symbol)
     print("初始资金：", round(INITIAL_CAPITAL, 2))
     print("最终权益：", round(equity, 2))
     print("总盈亏：", round(total_pnl, 2))
-    print("收益率：", round(
-        total_pnl / INITIAL_CAPITAL * 100, 2
-    ), "%")
+    print(
+        "收益率：",
+        round(total_pnl / INITIAL_CAPITAL * 100, 2),
+        "%"
+    )
     print("交易次数：", len(trades))
     print("盈利次数：", len(wins))
     print("亏损次数：", len(losses))
     print("胜率：", round(win_rate, 2), "%")
     print("盈利因子：", round(profit_factor, 2))
-    print("最大回撤：", round(
-        max_drawdown * 100, 2
-    ), "%")
+    print("最大回撤：", round(max_drawdown * 100, 2), "%")
 
     return trades, equity, max_drawdown
 
@@ -767,7 +693,7 @@ def main():
     print("手续费：", FEE_RATE * 100, "%")
     print("模拟滑点：", SLIPPAGE_RATE * 100, "%")
     print("止损：", ATR_STOP_MULTIPLE, "倍 ATR")
-    print("止盈风险收益比：", REWARD_RISK_RATIO, ": 1")
+    print("风险收益比：", REWARD_RISK_RATIO, ": 1")
 
     all_trades = []
     results = []
@@ -776,9 +702,7 @@ def main():
 
         try:
 
-            trades, equity, drawdown = simulate_symbol(
-                symbol
-            )
+            trades, equity, drawdown = simulate_symbol(symbol)
 
             all_trades.extend(trades)
 
@@ -786,21 +710,19 @@ def main():
                 "symbol": symbol,
                 "final_equity": round(equity, 2),
                 "pnl": round(
-                    equity - INITIAL_CAPITAL, 2
+                    equity - INITIAL_CAPITAL,
+                    2
                 ),
                 "max_drawdown": round(
-                    drawdown * 100, 2
+                    drawdown * 100,
+                    2
                 ),
                 "trades": len(trades),
             })
 
         except Exception as error:
 
-            print(
-                "\n回测失败：",
-                symbol,
-                error
-            )
+            print("\n回测失败：", symbol, error)
 
     os.makedirs("data", exist_ok=True)
 
@@ -849,8 +771,8 @@ def main():
             result["trades"],
         )
 
-    print("\n交易记录已保存：data/paper_trades.json")
-    print("汇总结果已保存：data/backtest_summary.json")
+    print("\n交易记录：data/paper_trades.json")
+    print("汇总结果：data/backtest_summary.json")
     print("回测完成。")
 
 
