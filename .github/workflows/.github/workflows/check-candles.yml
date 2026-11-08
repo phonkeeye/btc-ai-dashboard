@@ -1,0 +1,57 @@
+name: Check Candle Data Format
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download repository
+        uses: actions/checkout@v4
+
+      - name: Inspect candle files
+        run: |
+          python - <<'PY'
+          import json
+          import glob
+          import os
+
+          files = sorted(glob.glob("data/candles/*.jsonl"))
+
+          print(f"找到 {len(files)} 个K线文件")
+
+          for path in files:
+              print("\n" + "=" * 50)
+              print("文件:", path)
+
+              if not os.path.exists(path):
+                  print("文件不存在")
+                  continue
+
+              with open(path, "r", encoding="utf-8") as f:
+                  first = f.readline().strip()
+                  last = first
+                  count = 1 if first else 0
+
+                  for line in f:
+                      if line.strip():
+                          last = line.strip()
+                          count += 1
+
+              print("记录数量:", count)
+
+              for label, line in [("第一条", first), ("最后一条", last)]:
+                  try:
+                      data = json.loads(line)
+                      print(label + "格式:", type(data).__name__)
+                      print(label + "字段:", list(data.keys()) if isinstance(data, dict) else "数组")
+                      print(label + "样例:", data)
+                  except Exception as e:
+                      print(label + "解析失败:", e)
+
+          PY
