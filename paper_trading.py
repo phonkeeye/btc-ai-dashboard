@@ -484,12 +484,12 @@ def simulate_symbol(symbol):
                 )
 
                 net_pnl = (
-                    gross_pnl
-                    - exit_fee
-                    - position["entry_fee"]
-                )
+    gross_pnl
+    - exit_fee
+    - position["entry_fee"]
+)
 
-                equity += net_pnl
+equity += gross_pnl - exit_fee
 
                 trades.append({
                     "symbol": symbol,
