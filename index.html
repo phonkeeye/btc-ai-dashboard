@@ -53,6 +53,19 @@ button {
   <div class="value" id="price">正在连接行情...</div>
   <div class="small" id="liveTime">等待实时行情...</div>
 </div>
+
+<div class="card">
+  <div class="label">ETH 实时价格（OKX）</div>
+  <div class="value" id="ethPrice">正在连接行情...</div>
+  <div class="small" id="ethTime">等待实时行情...</div>
+</div>
+
+<div class="card">
+  <div class="label">SOL 实时价格（OKX）</div>
+  <div class="value" id="solPrice">正在连接行情...</div>
+  <div class="small" id="solTime">等待实时行情...</div>
+</div>
+
 <div class="card">
   <div class="label">AI观察信号</div>
   <div class="value" id="signal">等待数据</div>
@@ -89,6 +102,13 @@ button {
 <script>
 const OKX_URL =
   'https://www.okx.com/api/v5/market/ticker?instId=BTC-USDT-SWAP';
+
+const ETH_URL =
+  'https://www.okx.com/api/v5/market/ticker?instId=ETH-USDT-SWAP';
+
+const SOL_URL =
+  'https://www.okx.com/api/v5/market/ticker?instId=SOL-USDT-SWAP';
+
 let loadingLive = false;
 let loadingHistory = false;
 // 格式化价格
@@ -125,6 +145,50 @@ async function updateLivePrice() {
     console.log(error);
   } finally {
     loadingLive = false;
+  }
+}// 获取 ETH 和 SOL 实时价格
+let loadingAltLive = false;
+
+async function updateAltPrices() {
+  if (loadingAltLive) return;
+  loadingAltLive = true;
+
+  async function updateOne(url, priceId, timeId) {
+    try {
+      const response = await fetch(
+        url + '&t=' + Date.now(),
+        { cache: 'no-store' }
+      );
+
+      if (!response.ok) {
+        throw new Error('接口请求失败：' + response.status);
+      }
+
+      const result = await response.json();
+
+      if (result.code !== '0' || !result.data || !result.data.length) {
+        throw new Error('没有返回有效行情');
+      }
+
+      document.getElementById(priceId).textContent =
+        formatPrice(result.data[0].last);
+
+      document.getElementById(timeId).textContent =
+        '实时行情更新时间：' + new Date().toLocaleString();
+
+    } catch (error) {
+      document.getElementById(timeId).textContent =
+        '行情获取失败：' + error.message;
+    }
+  }
+
+  try {
+    await Promise.all([
+      updateOne(ETH_URL, 'ethPrice', 'ethTime'),
+      updateOne(SOL_URL, 'solPrice', 'solTime')
+    ]);
+  } finally {
+    loadingAltLive = false;
   }
 }
 // 显示周期分析
@@ -192,9 +256,12 @@ async function loadData() {
 }
 // 页面打开后立即执行
 updateLivePrice();
+updateAltPrices();
 loadData();
-// 实时价格每3秒更新
+// BTC、ETH、SOL 实时价格每3秒更新
 setInterval(updateLivePrice, 3000);
+setInterval(updateAltPrices, 3000);
+
 // AI分析每60秒更新
 setInterval(loadData, 60000);
 </script>
