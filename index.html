@@ -641,6 +641,15 @@ function showPeriod(coin, period, item) {
         '（平均量的 ' + item.volumeRatio.toFixed(2) + ' 倍）' +
         ' | ' + item.volumeSignal;
 
+  const divergenceText =
+    item.priceChangePercent === null
+      ? '量价关系：数据不足'
+      : '近5根价格变化：' +
+        item.priceChangePercent.toFixed(2) + '%' +
+        ' | 成交量变化：' +
+        item.volumeChangePercent.toFixed(2) + '%' +
+        ' | ' + item.volumeDivergence;
+
   setText(
     id,
     '趋势：' + item.trend +
@@ -648,7 +657,8 @@ function showPeriod(coin, period, item) {
     ' | EMA20：' + item.ema20.toFixed(2) +
     ' | EMA50：' + item.ema50.toFixed(2) +
     ' | EMA差距：' + item.distance.toFixed(3) + '%' +
-    ' | ' + volumeText
+    ' | ' + volumeText +
+    ' | ' + divergenceText
   );
 }
 
