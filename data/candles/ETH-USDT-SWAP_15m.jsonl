@@ -17936,3 +17936,6 @@
 {"time": 1794647700000, "open": 1903.39, "high": 1904.49, "low": 1898.16, "close": 1904.25, "volume": 85024.12, "volume_currency": 8502.412, "volume_quote": 16166294.4766}
 {"time": 1794648600000, "open": 1904.25, "high": 1909.0, "low": 1904.03, "close": 1907.81, "volume": 185843.04, "volume_currency": 18584.304, "volume_quote": 35444549.9371}
 {"time": 1794649500000, "open": 1907.81, "high": 1918.95, "low": 1907.31, "close": 1912.31, "volume": 534786.71, "volume_currency": 53478.671, "volume_quote": 102359011.36202}
+{"time": 1794650400000, "open": 1912.31, "high": 1913.95, "low": 1906.25, "close": 1906.25, "volume": 206758.41, "volume_currency": 20675.841, "volume_quote": 39481463.91497}
+{"time": 1794651300000, "open": 1906.26, "high": 1909.98, "low": 1905.72, "close": 1907.79, "volume": 117321.38, "volume_currency": 11732.138, "volume_quote": 22380982.29943}
+{"time": 1794652200000, "open": 1907.8, "high": 1911.65, "low": 1905.84, "close": 1910.0, "volume": 96206.09, "volume_currency": 9620.609, "volume_quote": 18366929.49727}
