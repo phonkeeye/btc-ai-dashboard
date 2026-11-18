@@ -18330,3 +18330,12 @@
 {"time": 1795002300000, "open": 64173.4, "high": 64273.4, "low": 64135.2, "close": 64207.8, "volume": 48640.41, "volume_currency": 486.4041, "volume_quote": 31230543.42925}
 {"time": 1795003200000, "open": 64207.8, "high": 64238.0, "low": 64070.8, "close": 64226.9, "volume": 116414.34, "volume_currency": 1164.1434, "volume_quote": 74707020.39426}
 {"time": 1795004100000, "open": 64226.9, "high": 64366.3, "low": 64194.8, "close": 64207.4, "volume": 71716.26, "volume_currency": 717.1626, "volume_quote": 46104667.32532}
+{"time": 1795005000000, "open": 64207.5, "high": 64246.7, "low": 63929.9, "close": 64032.6, "volume": 189332.22, "volume_currency": 1893.3222, "volume_quote": 121253748.94303}
+{"time": 1795005900000, "open": 64032.6, "high": 64158.1, "low": 63973.4, "close": 64051.0, "volume": 88928.36, "volume_currency": 889.2836, "volume_quote": 56966768.30791}
+{"time": 1795006800000, "open": 64051.1, "high": 64126.8, "low": 63945.8, "close": 64063.4, "volume": 91933.51, "volume_currency": 919.3351, "volume_quote": 58862731.21734}
+{"time": 1795007700000, "open": 64063.4, "high": 64079.6, "low": 63921.2, "close": 64051.1, "volume": 78040.01, "volume_currency": 780.4001, "volume_quote": 49955074.61414}
+{"time": 1795008600000, "open": 64051.1, "high": 64167.0, "low": 63954.5, "close": 63992.1, "volume": 61001.72, "volume_currency": 610.0172, "volume_quote": 39086950.79358}
+{"time": 1795009500000, "open": 63992.0, "high": 64019.9, "low": 63868.5, "close": 63914.4, "volume": 112039.59, "volume_currency": 1120.3959, "volume_quote": 71627583.55579}
+{"time": 1795010400000, "open": 63914.4, "high": 63988.8, "low": 63856.6, "close": 63898.8, "volume": 100840.9, "volume_currency": 1008.409, "volume_quote": 64461421.26511}
+{"time": 1795011300000, "open": 63898.7, "high": 64012.7, "low": 63870.0, "close": 63973.8, "volume": 91897.7, "volume_currency": 918.977, "volume_quote": 58756565.17877}
+{"time": 1795012200000, "open": 63974.0, "high": 64063.9, "low": 63038.8, "close": 63294.1, "volume": 838290.43, "volume_currency": 8382.9043, "volume_quote": 531871665.83724}
