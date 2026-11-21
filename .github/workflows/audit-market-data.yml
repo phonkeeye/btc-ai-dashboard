@@ -1,0 +1,30 @@
+name: DQ-01 Market Data Audit
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout current branch
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run read-only audit
+        run: python scripts/audit_market_data.py
+
+      - name: Save audit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: DQ-01-market-data-audit-report
+          path: audit-report.md
+          if-no-files-found: error
